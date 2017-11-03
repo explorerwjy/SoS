@@ -27,10 +27,12 @@ import shutil
 import fasteners
 import pkg_resources
 
-from collections.abc import Sequence
+from collections.abc import Sequence, Iterable
 
 from .utils import env, Error, short_repr, stable_repr, save_var, load_var, isPrimitive
 from .sos_eval import Undetermined
+from shlex import quote
+
 
 __all__ = ['dynamic', 'executable', 'env_variable', 'sos_variable']
 
@@ -154,6 +156,43 @@ class target:
 
     def __eq__(self, obj):
         return isinstance(obj, self.__class__) and self.signature() == obj.signature()
+
+class targets(target):
+    '''A collection of targets'''
+    def __init__(self, *args):
+        super(target, self).__init__()
+        self._targets = []
+        for arg in args:
+            if isinstance(arg, str):
+                self._targets.append(file_target(os.path.expanduser(arg)))
+            elif isinstance(arg, target):
+                self._targets.append(target)
+            elif isinstance(arg, Iterable):
+                # in case arg is a Generator, check its type will exhaust it
+                for t in list(arg):
+                    if isinstance(t, str):
+                        self._targets.append(file_target(t))
+                    elif isinstance(t, target):
+                        self._targets.append(t)
+                    else:
+                        raise RuntimeError('Unrecognized targets {} of type {}'.format(
+                            t, t.__class__.__name__))
+            else:
+                raise RuntimeError('Unrecognized targets {} of type {}'.format(
+                    arg, arg.__class__.__name__))
+
+    def __len__(self):
+        return len(self._targets)
+
+    def __getitem__(self, i):
+        return self._targets[i]
+
+    def __format__(self, format_spec):
+        if ',' in format_spec:
+            return ','.join(x.__format__(format_spec) for x in self._targets)
+        else:
+            return ' '.join(x.__format__(format_spec) for x in self._targets)
+
 
 class sos_variable(target):
     '''A target for a SoS variable.'''
@@ -330,12 +369,34 @@ class executable(target):
             self._md5 = fileMD5(exe_file)
         return self._md5
 
+
+
 class file_target(target):
     '''A regular target for files.
     '''
+    CONVERTERS = {
+        'u': os.path.expanduser,
+        'e': lambda x: x.replace(' ', '\\ '),
+        'a': lambda x: os.path.abspath(os.path.expanduser(x)),
+        'l': lambda x: os.path.realpath(os.path.expanduser(x)),
+        'd': os.path.dirname,
+        'b': os.path.basename,
+        'n': lambda x: os.path.splitext(x)[0],
+        'x': lambda x: os.path.splitext(x)[1],
+        'q': (lambda x: list2cmdline([x])) if sys.platform == 'win32' else quote,
+        'p': lambda x: ('/' if len(x) > 1 and x[1] == ':' else '') + x.replace('\\', '/').replace(':', '/'),
+        'r': repr,
+        's': str,
+        # these are handled elsewhere
+        ',': lambda x: x,
+        '!': lambda x: x,
+        'R': lambda x: x,
+        }
+
+
     def __init__(self, filename):
         super(file_target, self).__init__()
-        self._filename = os.path.expanduser(filename)
+        self._filename = filename
         self._md5 = None
         self._attachments = []
 
@@ -393,6 +454,14 @@ class file_target(target):
                     pass
         self._md5 = fileMD5(self.fullname())
         return self._md5
+
+    def __format__(self, format_spec):
+        # handling special !q conversion flag
+        obj = self._filename
+        for c in format_spec:
+            obj = self.CONVERTERS[c](obj)
+        return obj
+
     #
     # file_target - specific functions. Not required by other targets
     #
@@ -414,7 +483,7 @@ class file_target(target):
             return True
 
     def fullname(self):
-        return os.path.abspath(self.name())
+        return os.path.abspath(os.path.expanduser(self.name()))
 
     def size(self):
         if os.path.isfile(self._filename):

@@ -28,7 +28,8 @@ import shutil
 from sos.sos_script import SoS_Script
 from sos.utils import env
 from sos.sos_executor import Base_Executor
-from sos.target import file_target
+from sos.target import file_target, targets
+from sos.sos_eval import interpolate
 import subprocess
 
 class TestTarget(unittest.TestCase):
@@ -57,6 +58,20 @@ class TestTarget(unittest.TestCase):
         if os.path.isdir(os.path.expanduser(dirname)):
             shutil.rmtree(os.path.expanduser(dirname))
         os.mkdir(os.path.expanduser(dirname))
+
+    def testTargetFormat(self):
+        '''Test string interpolation of targets'''
+        for target, fmt, res in [
+                ('a.txt', '', 'a.txt'),
+                (targets('a.txt'), '', 'a.txt'),
+                (targets(['a.txt']), '', 'a.txt'),
+                (targets('/a/b/a.txt'), 'b', 'a.txt'),
+                (targets('a b.txt'), 'q', "'a b.txt'"),
+                (targets('a b.txt'), 'x', ".txt"),
+                ]:
+            self.assertEqual(
+                interpolate('{{target:{}}}'.format(fmt), globals(), locals()), res,
+                    "Interpolation of {}:{} should be {}".format(target, fmt, res))
 
     def testShared(self):
         '''Test option shared'''

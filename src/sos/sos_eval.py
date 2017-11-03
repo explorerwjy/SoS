@@ -27,7 +27,7 @@ import ast
 
 from .utils import env, Error, short_repr, DelayedAction, text_repr
 
-def interpolate(text, global_dict=None, local_dict=None):
+def interpolate(text, global_dict={}, local_dict={}):
     '''Evaluate expressions in `text` '''
     # step 1, make it a f-string (add quotation marks and f
     # step 2, evaluate as a string
