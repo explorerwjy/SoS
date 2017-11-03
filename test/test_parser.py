@@ -27,7 +27,7 @@ import subprocess
 from sos.utils import env, ArgumentError
 from sos.sos_script import SoS_Script, ParsingError
 from sos.sos_executor import Base_Executor
-from sos.target import file_target
+from sos.target import file_target, targets
 
 section1_sos = '''
 #!/usr/bin/env sos-runner
@@ -622,7 +622,7 @@ output: (f"a{x}" for x in _input)
 ''')
         wf = script.workflow()
         Base_Executor(wf).run(mode='dryrun')
-        self.assertEqual(sorted(env.sos_dict['i']), ['a.txt', 'a0', 'a1', 'b.txt'])
+        self.assertEqual(sorted([str(x) for x in env.sos_dict['i']]), ['a.txt', 'a0', 'a1', 'b.txt'])
         self.assertEqual(sorted(env.sos_dict['o']), ['aa.txt', 'aa0', 'aa1', 'ab.txt'])
 
 
@@ -844,7 +844,7 @@ executed.append(step_name)
         Base_Executor(wf).run(mode='dryrun')
         self.assertEqual(env.sos_dict['executed'], ['a_1', 'a_2', 'a_3', 'a_4', 'b_1', 'b_2', 'b_3', 'b_4'])
         self.assertEqual(env.sos_dict['a'], 1)
-        self.assertEqual(env.sos_dict['input_b1'], ['out_a_4'])
+        self.assertEqual(str(env.sos_dict['input_b1']), 'out_a_4')
         #
         wf = script.workflow('a: 1-2 + a:4 + b:3-')
         Base_Executor(wf).run(mode='dryrun')

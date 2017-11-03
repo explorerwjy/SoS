@@ -33,7 +33,7 @@ from .utils import env, StopInputGroup, TerminateExecution, short_repr, stable_r
     get_traceback, transcribe, expand_size, format_HHMMSS
 from .pattern import extract_pattern
 from .sos_eval import SoS_eval, SoS_exec, Undetermined
-from .target import target, file_target, dynamic, remote, RuntimeInfo, UnknownTarget, RemovedTarget, UnavailableLock
+from .target import target, file_target, dynamic, remote, targets, RuntimeInfo, UnknownTarget, RemovedTarget, UnavailableLock
 from .sos_syntax import SOS_INPUT_OPTIONS, SOS_DEPENDS_OPTIONS, SOS_OUTPUT_OPTIONS, \
     SOS_RUNTIME_OPTIONS, SOS_TAG
 from .sos_task import TaskParams, MasterTaskParams
@@ -662,8 +662,8 @@ class Base_Step_Executor:
                 ifiles = [x for x in ifiles if kwargs['filetype'](x)]
         #
         # input file is the filtered files
-        env.sos_dict.set('input', ifiles)
-        env.sos_dict.set('_input', ifiles)
+        env.sos_dict.set('input', targets(ifiles))
+        env.sos_dict.set('_input', targets(ifiles))
         #
         # handle group_by
         if 'group_by' in kwargs:
@@ -1010,13 +1010,13 @@ class Base_Step_Executor:
         else:
             if env.sos_dict['__step_output__'] is not None and not isinstance(env.sos_dict['__step_output__'], (list, Undetermined)):
                 raise RuntimeError('__step_output__ can only be None, Undetermined, or a list of files.')
-            env.sos_dict.set('input', copy.deepcopy(env.sos_dict['__step_output__']))
+            env.sos_dict.set('input', targets(copy.deepcopy(env.sos_dict['__step_output__'])))
 
         # input can be Undetermined from undetermined output from last step
         env.sos_dict.set('_input', copy.deepcopy(env.sos_dict['input']))
         if '__default_output__' in env.sos_dict:
-            env.sos_dict.set('output', copy.deepcopy(env.sos_dict['__default_output__']))
-            env.sos_dict.set('_output', copy.deepcopy(env.sos_dict['__default_output__']))
+            env.sos_dict.set('output', targets(copy.deepcopy(env.sos_dict['__default_output__'])))
+            env.sos_dict.set('_output', targets(copy.deepcopy(env.sos_dict['__default_output__'])))
         else:
             env.sos_dict.set('output', None)
             env.sos_dict.set('_output', None)
@@ -1150,9 +1150,9 @@ class Base_Step_Executor:
                                             if isinstance(matched, dict):
                                                 # in this case, an Undetermined output can get real output files
                                                 # from a signature
-                                                env.sos_dict.set('_input', matched['input'])
-                                                env.sos_dict.set('_depends', matched['depends'])
-                                                env.sos_dict.set('_output', matched['output'])
+                                                env.sos_dict.set('_input', targets(matched['input']))
+                                                env.sos_dict.set('_depends', targets(matched['depends']))
+                                                env.sos_dict.set('_output', targets(matched['output']))
                                                 env.sos_dict.update(matched['vars'])
                                                 env.logger.info('``{}`` (index={}) is ``ignored`` due to saved signature'.format(self.step.step_name(True), idx))
                                                 skip_index = True
@@ -1163,9 +1163,9 @@ class Base_Step_Executor:
                                         if isinstance(matched, str):
                                             raise RuntimeError('Signature mismatch: {}'.format(matched))
                                         else:
-                                            env.sos_dict.set('_input', matched['input'])
-                                            env.sos_dict.set('_depends', matched['depends'])
-                                            env.sos_dict.set('_output', matched['output'])
+                                            env.sos_dict.set('_input', targets(matched['input']))
+                                            env.sos_dict.set('_depends', targets(matched['depends']))
+                                            env.sos_dict.set('_output', targets(matched['output']))
                                             env.sos_dict.update(matched['vars'])
                                             env.logger.info('Step ``{}`` (index={}) is ``ignored`` with matching signature'.format(self.step.step_name(True), idx))
                                             skip_index = True

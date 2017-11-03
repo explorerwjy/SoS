@@ -174,10 +174,10 @@ class targets(target):
                         self._targets.append(file_target(t))
                     elif isinstance(t, target):
                         self._targets.append(t)
-                    else:
+                    elif t is not None:
                         raise RuntimeError('Unrecognized targets {} of type {}'.format(
                             t, t.__class__.__name__))
-            else:
+            elif arg is not None:
                 raise RuntimeError('Unrecognized targets {} of type {}'.format(
                     arg, arg.__class__.__name__))
 
@@ -193,6 +193,14 @@ class targets(target):
         else:
             return ' '.join(x.__format__(format_spec) for x in self._targets)
 
+    def signature(self):
+        if len(self._targets) == 1:
+            return self._targets[0].signature()
+        else:
+            raise ValueError('No signature for group of targets {}'.format(self))
+
+    def __repr__(self):
+        return ', '.join(repr(x) for x in self._targets)
 
 class sos_variable(target):
     '''A target for a SoS variable.'''
@@ -396,7 +404,13 @@ class file_target(target):
 
     def __init__(self, filename):
         super(file_target, self).__init__()
-        self._filename = filename
+        if isinstance(filename, str):
+            self._filename = filename
+        elif isinstance(filename, file_target):
+            self._filename = filename._filename
+        else:
+            raise ValueError('Cannot create a file target with {} of type {}'.format(
+                filename, filename.__class__.__name__))
         self._md5 = None
         self._attachments = []
 
@@ -416,6 +430,9 @@ class file_target(target):
     # in different folders
     def __repr__(self):
         return self.name()
+
+    def __hash__(self):
+        return hash(repr(self))
 
     def sig_file(self):
         if self._sigfile is not None:
@@ -462,6 +479,11 @@ class file_target(target):
             obj = self.CONVERTERS[c](obj)
         return obj
 
+    def __eq__(self, other):
+        return self._filename == file_target(other)._filename
+
+    def __lt__(self, other):
+        return self._filename < file_target(other)._filename
     #
     # file_target - specific functions. Not required by other targets
     #
@@ -518,7 +540,7 @@ class file_target(target):
             raise RuntimeError('{} or its signature does not exist.'.format(self._filename))
 
     def __eq__(self, other):
-        return os.path.abspath(self.fullname()) == os.path.abspath(other.fullname())
+        return isinstance(other, file_target) and os.path.abspath(self.fullname()) == os.path.abspath(other.fullname()) 
 
     def write_sig(self):
         '''Write .file_info file with signature'''
