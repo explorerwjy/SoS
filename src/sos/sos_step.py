@@ -238,9 +238,9 @@ def analyze_section(section, default_input=None):
         signature_vars |= accessed_vars(section.task)
     return {
         'step_name': '{}_{}'.format(section.name, section.index) if isinstance(section.index, int) else section.name,
-        'step_input': step_input,
-        'step_output': step_output,
-        'step_depends': step_depends,
+        'step_input': step_input if isinstance(step_input, Undetermined) else targets(step_input),
+        'step_output': step_output if isinstance(step_output, Undetermined) else targets(step_output),
+        'step_depends': step_depends if isinstance(step_depends, Undetermined) else targets(step_depends),
         # variables starting with __ are internals...
         'environ_vars': {x for x in environ_vars - local_vars if not x.startswith('__')},
         'signature_vars': {x for x in signature_vars if not x.startswith('__')},

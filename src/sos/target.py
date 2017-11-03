@@ -410,7 +410,8 @@ class executable(target):
             self._md5 = fileMD5(exe_file)
         return self._md5
 
-
+    def __eq__(self, other):
+        return isinstance(other, executable) and self._cmd == other._cmd and self._version == other._version
 
 class file_target(target):
     '''A regular target for files.
