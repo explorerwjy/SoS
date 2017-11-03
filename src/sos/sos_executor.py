@@ -428,31 +428,34 @@ class Base_Executor:
                 env.logger.info('Resolving {} objects from {} nodes'.format(len(dangling_targets), dag.number_of_nodes()))
             # find matching steps
             # check auxiliary steps and see if any steps provides it
-            for target in dangling_targets:
+            for t in dangling_targets:
                 # target might no longer be dangling after a section is added.
-                if target not in dag.dangling(targets)[0]:
+                if t not in dag.dangling(targets)[0]:
                     continue
-                mo = [(x, self.match(target, x)) for x in self.workflow.auxiliary_sections]
+                mo = [(x, self.match(t, x)) for x in self.workflow.auxiliary_sections]
                 mo = [x for x in mo if x[1] is not False]
                 if not mo:
-                    nodes = dag._all_dependent_files[target]
+                    nodes = dag._all_dependent_files[t]
                     for node in nodes:
                         # if this is an index step... simply let it depends on previous steps
                         if node._node_index is not None:
                             indexed = [x for x in dag.nodes() if x._node_index is not None and x._node_index < node._node_index and isinstance(x._output_targets, Undetermined)]
                             indexed.sort(key = lambda x: x._node_index)
                             if not indexed:
-                                raise RuntimeError('No step to generate target {}{}'.format(target, dag.steps_depending_on(target, self.workflow)))
+                                raise RuntimeError(
+                                    f'No step to generate target {t}{dag.steps_depending_on(t, self.workflow)}')
                             if not isinstance(node._input_targets, Undetermined):
                                 node._input_targets = Undetermined('')
                             if not isinstance(node._depends_targets, Undetermined):
                                 node._depends_targets = Undetermined('')
                         else:
-                            raise RuntimeError('No step to generate target {}{}'.format(target, dag.steps_depending_on(target, self.workflow)))
+                            raise RuntimeError(
+                                f'No step to generate target {t}{dag.steps_depending_on(t, self.workflow)}')
                     resolved += 1
                     continue
                 if len(mo) > 1:
-                    raise RuntimeError('Multiple steps {} to generate target {}'.format(', '.join(x[0].step_name() for x in mo), target))
+                    raise RuntimeError(
+                        f'Multiple steps {", ".join(x[0].step_name() for x in mo)} to generate target {target}')
                 #
                 # only one step, we need to process it # execute section with specified input
                 #
@@ -469,7 +472,7 @@ class Base_Executor:
                 # from patten), we should specify all output as output of step. Otherwise the
                 # step will be created for multiple outputs. issue #243
                 if mo[0][1]:
-                    env.sos_dict['__default_output__'] = [] if isinstance(target, sos_step) else [target]
+                    env.sos_dict['__default_output__'] = [] if isinstance(t, sos_step) else [t]
                 elif isinstance(section.options['provides'], Sequence):
                     env.sos_dict['__default_output__'] = section.options['provides']
                 else:
@@ -480,7 +483,8 @@ class Base_Executor:
                 res = analyze_section(section)
                 #
                 # build DAG with input and output files of step
-                env.logger.debug('Adding step {} with output {} to resolve target {}'.format(res['step_name'], short_repr(res['step_output']), target))
+                env.logger.debug(
+                    f'Adding step {res["step_name"]} with output {short_repr(res["step_output"])} to resolve target {t}')
                 if isinstance(mo[0][1], dict):
                     context = mo[0][1]
                 else:
