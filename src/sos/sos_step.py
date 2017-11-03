@@ -236,6 +236,7 @@ def analyze_section(section, default_input=None):
     # finally, tasks..
     if section.task:
         signature_vars |= accessed_vars(section.task)
+
     return {
         'step_name': '{}_{}'.format(section.name, section.index) if isinstance(section.index, int) else section.name,
         'step_input': step_input if isinstance(step_input, Undetermined) else targets(step_input),

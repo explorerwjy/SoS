@@ -208,6 +208,9 @@ class targets(target, Sequence):
         else:
             raise ValueError(f'Cannot get attribute {item} of targets of length {len(self)}')
 
+    def to_names(self):
+        return [x.name() if isinstance(x, file_target) else x for x in self._targets]
+
     def signature(self, mode='any'):
         if len(self._targets) == 1:
             return self._targets[0].signature()

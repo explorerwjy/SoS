@@ -143,6 +143,9 @@ class Undetermined(object):
     def value(self):
         return SoS_eval(self.expr)
 
+    def to_names(self):
+        return self
+
     def __repr__(self):
         return 'Undetermined({!r})'.format(self.expr)
 
