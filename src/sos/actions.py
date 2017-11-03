@@ -44,7 +44,7 @@ import multiprocessing as mp
 from tqdm import tqdm as ProgressBar
 from .utils import env, transcribe, StopInputGroup, TerminateExecution, short_repr, get_traceback
 from .sos_eval import Undetermined, interpolate
-from .target import FileTarget, fileMD5, executable, UnknownTarget, target
+from .target import file_target, fileMD5, executable, UnknownTarget, target
 
 
 __all__ = ['SoS_Action', 'script', 'sos_run',
@@ -213,7 +213,7 @@ def SoS_Action(run_mode=('run', 'interactive'), acceptable_args=('*',)):
                 ofiles = [os.path.expanduser(x) for x in ofiles]
                 for ofile in ofiles:
                     if isinstance(ofile, str):
-                        if not FileTarget(ofile).exists('any'):
+                        if not file_target(ofile).exists('any'):
                             raise RuntimeError('Output target {} does not exist after completion of action {}'.format(ofile, func.__name__))
                     elif isinstance(ofile, target):
                         if not ofile.exists('any'):
@@ -498,7 +498,7 @@ def downloadURL(URL, dest, decompress=False, index=None):
     term_width = shutil.get_terminal_size((80, 20)).columns
     try:
         env.logger.debug('Download {} to {}'.format(URL, dest))
-        sig = FileTarget(dest)
+        sig = file_target(dest)
         if os.path.isfile(dest):
             prog = ProgressBar(desc=message + ': \033[32m validating\033[0m', disable=env.verbosity <= 1,
                 position=index, leave=True, bar_format='{desc}', total=10000000)

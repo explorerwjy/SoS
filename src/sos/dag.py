@@ -29,7 +29,7 @@ import fasteners
 
 from .utils import env, ActivityNotifier, short_repr
 from .sos_eval import Undetermined
-from .target import FileTarget, sos_variable, textMD5, sos_step
+from .target import file_target, sos_variable, textMD5, sos_step
 
 
 #
@@ -230,14 +230,14 @@ class SoS_DAG(nx.DiGraph):
         missing = []
         existing = []
         for x in list(self._all_dependent_files.keys()) + ([] if targets is None else targets):
-            if FileTarget(x).exists() if isinstance(x, str) else x.exists():
+            if file_target(x).exists() if isinstance(x, str) else x.exists():
                 if x not in self._all_output_files:
                     existing.append(x)
             elif x not in self._all_output_files:
                 missing.append(x)
         return missing, existing
         #return [x for x in list(self._all_dependent_files.keys()) + ([] if targets is None else targets) \
-        #    if x not in self._all_output_files and not (FileTarget(x).exists() if isinstance(x, str) else x.exists())]
+        #    if x not in self._all_output_files and not (file_target(x).exists() if isinstance(x, str) else x.exists())]
 
     def regenerate_target(self, target):
         if target in self._all_output_files:
@@ -255,7 +255,7 @@ class SoS_DAG(nx.DiGraph):
             # but the actual file has been removed.
             # We will have to find this auxiliary step and rerun
             if isinstance(target, str):
-                FileTarget(target).remove_sig()
+                file_target(target).remove_sig()
             else:
                 target.remove_sig()
             return False

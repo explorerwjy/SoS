@@ -33,7 +33,7 @@ from .utils import env, StopInputGroup, TerminateExecution, short_repr, stable_r
     get_traceback, transcribe, expand_size, format_HHMMSS
 from .pattern import extract_pattern
 from .sos_eval import SoS_eval, SoS_exec, Undetermined
-from .target import target, FileTarget, dynamic, remote, RuntimeInfo, UnknownTarget, RemovedTarget, UnavailableLock
+from .target import target, file_target, dynamic, remote, RuntimeInfo, UnknownTarget, RemovedTarget, UnavailableLock
 from .sos_syntax import SOS_INPUT_OPTIONS, SOS_DEPENDS_OPTIONS, SOS_OUTPUT_OPTIONS, \
     SOS_RUNTIME_OPTIONS, SOS_TAG
 from .sos_task import TaskParams, MasterTaskParams
@@ -373,9 +373,9 @@ class Base_Step_Executor:
             # if the file does not exist (although the signature exists)
             # request generation of files
             if isinstance(target, str):
-                if not FileTarget(target).exists('target'):
+                if not file_target(target).exists('target'):
                     # remove the signature and regenerate the file
-                    FileTarget(target).remove_sig()
+                    file_target(target).remove_sig()
                     raise RemovedTarget(target)
             elif not target.exists('target'):
                 target.remove_sig()
@@ -390,7 +390,7 @@ class Base_Step_Executor:
             raise RuntimeError('Output of a completed step cannot be undetermined.')
         for target in env.sos_dict['output']:
             if isinstance(target, str):
-                if not FileTarget(target).exists('any'):
+                if not file_target(target).exists('any'):
                     raise RuntimeError('Output target {} does not exist after the completion of step {} (curdir={})'
                             .format(target, env.sos_dict['step_name'], os.getcwd()))
             elif not target.exists('any'):
@@ -1366,9 +1366,9 @@ def _expand_file_list(ignore_unknown, *args):
                 tmp.append(ifile)
             else:
                 raise UnknownTarget(ifile)
-        elif FileTarget(ifile).exists('target'):
+        elif file_target(ifile).exists('target'):
             tmp.append(ifile)
-        elif FileTarget(ifile).exists('signature'):
+        elif file_target(ifile).exists('signature'):
             env.logger.debug('``{}`` exists in signature form (actual target has been removed).'.format(ifile))
             tmp.append(ifile)
         else:
