@@ -814,12 +814,12 @@ def report(script=None, input=None, output=None, **kwargs):
     if isinstance(output, str):
         if not output or output == '-':
             writer = sys.stdout.write
-        elif output.startswith('>>'):
-            file_handle = open(os.path.expanduser(output[2:]), 'a')
-            writer = file_handle.write
         else:
             file_handle = open(os.path.expanduser(output), 'w')
             writer = file_handle.write
+    elif isinstance(output, file_target):
+        file_handle = open(output.fullname(), 'w')
+        writer = file_handle.write
     elif hasattr(output, 'write'):
         writer = output.write
     elif output is None or output == '':

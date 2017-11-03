@@ -163,19 +163,19 @@ class targets(target, Sequence):
         for arg in args:
             if isinstance(arg, str):
                 self._targets.append(file_target(os.path.expanduser(arg)))
+            elif isinstance(arg, targets):
+                self._targets.extend(arg.targets())
             elif isinstance(arg, target):
                 self._targets.append(arg)
-            elif isinstance(arg, targets):
-                self._targets.extends(arg.targets())
             elif isinstance(arg, Iterable):
                 # in case arg is a Generator, check its type will exhaust it
                 for t in list(arg):
                     if isinstance(t, str):
                         self._targets.append(file_target(t))
+                    elif isinstance(t, targets):
+                        self._targets.extend(t.targets())
                     elif isinstance(t, target):
                         self._targets.append(t)
-                    elif isinstance(t, targets):
-                        self._targets.extends(t.targets())
                     elif t is not None:
                         raise RuntimeError('Unrecognized targets {} of type {}'.format(
                             t, t.__class__.__name__))
@@ -202,23 +202,41 @@ class targets(target, Sequence):
         else:
             return ' '.join(x.__format__(format_spec) for x in self._targets)
 
+    def __getattr__(self, item):
+        if len(self._targets) == 1:
+            return getattr(self._targets, item)
+        else:
+            raise ValueError(f'Cannot get attribute {item} of targets of length {len(self)}')
+
     def signature(self, mode='any'):
         if len(self._targets) == 1:
             return self._targets[0].signature()
         else:
-            raise ValueError('No signature for group of targets {}'.format(self))
+            raise ValueError(f'No signature for group of {len(self)} targets')
 
     def exists(self, mode='any'):
+        if not self._targets:
+            return True
         if len(self._targets) == 1:
             return self._targets[0].exists(mode)
         else:
-            raise ValueError(f'Canot test existense for group of {len(self)} targets {self!r}')
+            raise ValueError(f'Cannot test exist() for group of {len(self)} targets {self!r}')
 
     def name(self):
         if len(self._targets) == 1:
+            env.logger.error(f'FIST ELE {self._targets[0]} of type {self._targets[0].__class__.__name__}')
             return self._targets[0].name()
         else:
-            raise ValueError('Canot get name() for group of targets {}'.format(self))
+            raise ValueError(f'Canot get name() for group of targets of {len(self)} targets')
+
+    def __deepcopy__(self, memo):
+        return targets(self._targets)
+
+    def __getstate__(self):
+        return self._targets
+
+    def __setstate__(self, targets):
+        self._targets = targets
 
     def __hash__(self):
         return hash(repr(self))
