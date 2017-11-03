@@ -113,17 +113,9 @@ def SoS_Action(run_mode=('run', 'interactive'), acceptable_args=('*',)):
                     raise RuntimeError('Unacceptable value for option active: {}'.format(kwargs['active']))
             # verify input
             if 'input' in kwargs and kwargs['input'] is not None:
-                if isinstance(kwargs['input'], str):
-                    ifiles = [kwargs['input']]
-                elif isinstance(kwargs['input'], Sequence):
-                    ifiles = list(kwargs['input'])
-                else:
-                    raise ValueError('Unacceptable value for parameter input of actions: {}'.format(kwargs['input']))
-
-                ifiles = [os.path.expanduser(x) for x in ifiles]
-
+                ifiles = targets(kwargs['input'])
                 for ifile in ifiles:
-                    if not os.path.exists(ifile):
+                    if not ifile.exists('target'):
                         raise ValueError('Input file {} does not exist.'.format(ifile))
 
             # if there are parameters input and output, the action is subject to signature verification
@@ -137,27 +129,12 @@ def SoS_Action(run_mode=('run', 'interactive'), acceptable_args=('*',)):
                 else:
                     script = ''
 
-                if isinstance(kwargs['tracked'], str):
-                    tfiles = [kwargs['tracked']]
-                elif isinstance(kwargs['tracked'], Sequence):
-                    tfiles = kwargs['tracked']
-                elif kwargs['tracked'] is True:
-                    tfiles = []
-                else:
-                    raise ValueError('Parameter tracked of actions can be None, True/False, or one or more filenames')
+                tracked = targets(kwargs['tracked'])
 
                 # append input and output
                 for t in ('input', 'output'):
                     if t in kwargs and kwargs[t] is not None:
-                        if isinstance(kwargs[t], str):
-                            tfiles.append(kwargs[t])
-                        elif isinstance(kwargs[t], Sequence):
-                            tfiles.extend(list(kwargs[t]))
-                        else:
-                            env.logger.warning('Cannot track input or output file {}'.format(kwargs[t]))
-
-                # expand user...
-                tfiles = [os.path.expanduser(x) for x in tfiles]
+                        tracked.extend(targets(kwargs[t]))
 
                 from .target import RuntimeInfo
                 sig = RuntimeInfo(func.__name__, script, [], tfiles, [], kwargs)
@@ -165,10 +142,10 @@ def SoS_Action(run_mode=('run', 'interactive'), acceptable_args=('*',)):
                 if env.config['sig_mode'] == 'default':
                     matched = sig.validate()
                     if isinstance(matched, dict):
-                        env.logger.info('Action ``{}`` is ``ignored`` due to saved signature'.format(func.__name__))
+                        env.logger.info(f'Action ``{func.__name__}`` is ``ignored`` due to saved signature')
                         return None
                     else:
-                        env.logger.debug('Signature mismatch: {}'.format(matched))
+                        env.logger.debug(f'Signature mismatch: {matched}')
                 elif env.config['sig_mode'] == 'assert':
                     matched = sig.validate()
                     if isinstance(matched, str):
