@@ -212,7 +212,7 @@ class targets(target, Sequence):
         if len(self._targets) == 1:
             return self._targets[0].exists(mode)
         else:
-            raise ValueError(f'Canot test existense for group of targets {self!r}')
+            raise ValueError(f'Canot test existense for group of {len(self)} targets {self!r}')
 
     def name(self):
         if len(self._targets) == 1:
