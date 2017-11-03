@@ -35,7 +35,7 @@ from .utils import env, Error, WorkflowDict, get_traceback, short_repr, pickleab
     load_config_files, save_var, load_var
 from .sos_eval import SoS_exec
 from .dag import SoS_DAG
-from .target import BaseTarget, FileTarget, UnknownTarget, RemovedTarget, UnavailableLock, sos_variable, textMD5, sos_step, Undetermined
+from .target import target, FileTarget, UnknownTarget, RemovedTarget, UnavailableLock, sos_variable, textMD5, sos_step, Undetermined
 from .pattern import extract_pattern
 from .hosts import Host
 
@@ -396,14 +396,14 @@ class Base_Executor:
         if not 'provides' in step.options:
             return False
         patterns = step.options['provides']
-        if isinstance(patterns, (str, BaseTarget)):
+        if isinstance(patterns, (str, target)):
             patterns = [patterns]
         elif not isinstance(patterns, Sequence):
             raise RuntimeError('Unknown target to match: {}'.format(patterns))
         #
         for p in patterns:
             # other targets has to match exactly
-            if isinstance(target, BaseTarget) or isinstance(p, BaseTarget):
+            if isinstance(target, target) or isinstance(p, target):
                 if target == p:
                     return {}
                 else:

@@ -105,7 +105,7 @@ def fileMD5(filename, partial=True):
     return md5.hexdigest()
 
 
-class BaseTarget:
+class target:
     '''A base class for all targets (e.g. a file)'''
     def __init__(self):
         self._sigfile = None
@@ -155,7 +155,7 @@ class BaseTarget:
     def __eq__(self, obj):
         return isinstance(obj, self.__class__) and self.signature() == obj.signature()
 
-class sos_variable(BaseTarget):
+class sos_variable(target):
     '''A target for a SoS variable.'''
     def __init__(self, var):
         super(sos_variable, self).__init__()
@@ -170,7 +170,7 @@ class sos_variable(BaseTarget):
     def signature(self, mode='any'):
         return textMD5(self._var)
 
-class env_variable(BaseTarget):
+class env_variable(target):
     '''A target for an environmental variable.'''
     def __init__(self, var):
         super(env_variable, self).__init__()
@@ -185,7 +185,7 @@ class env_variable(BaseTarget):
     def signature(self, mode='any'):
         return textMD5(repr(os.environ[self._var]))
 
-class sos_step(BaseTarget):
+class sos_step(target):
     '''A target for a step of sos.'''
     def __init__(self, step_name):
         super(sos_step, self).__init__()
@@ -205,7 +205,7 @@ class sos_step(BaseTarget):
     def write_sig(self):
         pass
 
-# class bundle(BaseTarget):
+# class bundle(target):
 #     '''a bundle of other targets'''
 #     def __init__(self, *args):
 #         super(bundle, self).__init__()
@@ -231,7 +231,7 @@ class sos_step(BaseTarget):
 #     def signature(self, mode='any'):
 #         return textMD5(repr(self._targets))
 #
-class dynamic(BaseTarget):
+class dynamic(target):
     '''A dynamic executable that only handles input files when
     it is available. This target is handled directly with its `resolve`
     function called by the executor. '''
@@ -244,7 +244,7 @@ class dynamic(BaseTarget):
     def resolve(self):
         return self._target
 
-class remote(BaseTarget):
+class remote(target):
     '''A remote target is not tracked and not translated during task execution'''
     def __init__(self, *targets):
         super(remote, self).__init__()
@@ -260,7 +260,7 @@ class remote(BaseTarget):
     def name(self):
         if isinstance(self._target, str):
             return FileTarget(self._target).name()
-        elif isinstance(self._target, BaseTarget):
+        elif isinstance(self._target, target):
             return self._target.name()
         else:
             return repr(self._target)
@@ -277,7 +277,7 @@ class remote(BaseTarget):
     def flatten(self):
         return [remote(x) for x in self._target]
 
-class executable(BaseTarget):
+class executable(target):
     '''A target for an executable command.'''
 
     def __init__(self, cmd, version=None):
@@ -330,7 +330,7 @@ class executable(BaseTarget):
             self._md5 = fileMD5(exe_file)
         return self._md5
 
-class FileTarget(BaseTarget):
+class FileTarget(target):
     '''A regular target for files.
     '''
     def __init__(self, filename):
