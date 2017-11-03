@@ -220,6 +220,11 @@ class targets(target, Sequence):
         else:
             raise ValueError('Canot get name() for group of targets {}'.format(self))
 
+    def __hash__(self):
+        return hash(repr(self))
+
+    def __eq__(self, other):
+        return isinstance(other, targets) and self._targets == other._targets
 
     def sig_file(self):
         if len(self._targets) == 1:

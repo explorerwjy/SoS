@@ -622,8 +622,8 @@ output: (f"a{x}" for x in _input)
 ''')
         wf = script.workflow()
         Base_Executor(wf).run(mode='dryrun')
-        self.assertEqual(sorted([str(x) for x in env.sos_dict['i']]), ['a.txt', 'a0', 'a1', 'b.txt'])
-        self.assertEqual(sorted(env.sos_dict['o']), ['aa.txt', 'aa0', 'aa1', 'ab.txt'])
+        self.assertEqual(sorted(str(x) for x in env.sos_dict['i']), ['a.txt', 'a0', 'a1', 'b.txt'])
+        self.assertEqual(sorted(str(x) for x in env.sos_dict['o']), ['aa.txt', 'aa0', 'aa1', 'ab.txt'])
 
 
     def testGroupBy(self):
@@ -642,7 +642,8 @@ executed.append(_input)
 ''')
         wf = script.workflow()
         Base_Executor(wf).run(mode='dryrun')
-        self.assertEqual(env.sos_dict['executed'],  [['a1.txt', 'a2.txt', 'a3.txt', 'a4.txt']])
+        self.assertEqual(env.sos_dict['executed'],  [
+            targets(['a1.txt', 'a2.txt', 'a3.txt', 'a4.txt'])])
         # group_by = 'single'
         script = SoS_Script('''
 [0: shared='executed']
@@ -655,7 +656,8 @@ executed.append(_input)
 ''')
         wf = script.workflow()
         Base_Executor(wf).run(mode='dryrun')
-        self.assertEqual(env.sos_dict['executed'],  [['a1.txt'], ['a2.txt'], ['a3.txt'], ['a4.txt']])
+        self.assertEqual(env.sos_dict['executed'],  [targets(['a1.txt']),
+            targets(['a2.txt']), targets(['a3.txt']), targets(['a4.txt'])])
         # group_by = 'pairs'
         script = SoS_Script('''
 [0: shared='executed']
@@ -668,7 +670,8 @@ executed.append(_input)
 ''')
         wf = script.workflow()
         Base_Executor(wf).run(mode='dryrun')
-        self.assertEqual(env.sos_dict['executed'],  [['a1.txt', 'a3.txt'], ['a2.txt', 'a4.txt']])
+        self.assertEqual(env.sos_dict['executed'],  [targets(['a1.txt', 'a3.txt']), 
+            targets(['a2.txt', 'a4.txt'])])
         # group_by = 'pairwise'
         script = SoS_Script('''
 [0: shared='executed']
@@ -681,7 +684,8 @@ executed.append(_input)
 ''')
         wf = script.workflow()
         Base_Executor(wf).run(mode='dryrun')
-        self.assertEqual(env.sos_dict['executed'],  [['a1.txt', 'a2.txt'], ['a2.txt', 'a3.txt'], ['a3.txt', 'a4.txt']])
+        self.assertEqual(env.sos_dict['executed'],  [targets(['a1.txt', 'a2.txt']),
+            targets(['a2.txt', 'a3.txt']), targets(['a3.txt', 'a4.txt'])])
         # group_by = 'combinations'
         script = SoS_Script('''
 [0: shared='executed']
@@ -694,8 +698,10 @@ executed.append(_input)
 ''')
         wf = script.workflow()
         Base_Executor(wf).run(mode='dryrun')
-        self.assertEqual(env.sos_dict['executed'],  [['a1.txt', 'a2.txt'], ['a1.txt', 'a3.txt'],
-            ['a1.txt', 'a4.txt'], ['a2.txt', 'a3.txt'], ['a2.txt', 'a4.txt'], ['a3.txt', 'a4.txt']])
+        self.assertEqual(env.sos_dict['executed'],  [
+            targets(['a1.txt', 'a2.txt']), targets(['a1.txt', 'a3.txt']),
+            targets(['a1.txt', 'a4.txt']), targets(['a2.txt', 'a3.txt']),
+            targets(['a2.txt', 'a4.txt']), targets(['a3.txt', 'a4.txt'])])
         # group_by chunks specified as integers
         script = SoS_Script('''
 [0: shared='executed']
@@ -708,10 +714,10 @@ executed.append(_input)
 ''')
         wf = script.workflow()
         Base_Executor(wf).run(mode='dryrun')
-        self.assertEqual(env.sos_dict['executed'],
-                         [['a1.txt', 'a2.txt', 'a3.txt'],
-                         ['a4.txt', 'a5.txt', 'a6.txt'],
-                         ['a7.txt', 'a8.txt', 'a9.txt']])
+        self.assertEqual(env.sos_dict['executed'], [
+                        targets(['a1.txt', 'a2.txt', 'a3.txt']),
+                        targets( ['a4.txt', 'a5.txt', 'a6.txt']),
+                        targets(['a7.txt', 'a8.txt', 'a9.txt'])])
         # group_by chunks specified as integer strings
         script = SoS_Script('''
 [0: shared='executed']
@@ -724,10 +730,10 @@ executed.append(_input)
 ''')
         wf = script.workflow()
         Base_Executor(wf).run(mode='dryrun')
-        self.assertEqual(env.sos_dict['executed'],
-                         [['a1.txt', 'a2.txt', 'a3.txt'],
-                         ['a4.txt', 'a5.txt', 'a6.txt'],
-                         ['a7.txt', 'a8.txt', 'a9.txt']])
+        self.assertEqual(env.sos_dict['executed'], [
+                         targets(['a1.txt', 'a2.txt', 'a3.txt']),
+                         targets(['a4.txt', 'a5.txt', 'a6.txt']),
+                         targets(['a7.txt', 'a8.txt', 'a9.txt'])])
         # number of files should be divisible by group_by
         self.touch(['a{}.txt'.format(x) for x in range(1, 10)])
         script = SoS_Script('''
@@ -771,7 +777,9 @@ executed.append(_output)
 ''')
         wf = script.workflow()
         Base_Executor(wf).run(mode='dryrun')
-        self.assertEqual(env.sos_dict['executed'], [['a0.txt.bak', 'a1.txt.bak'], ['a2.txt.bak', 'a3.txt.bak']])
+        self.assertEqual(env.sos_dict['executed'], [
+            targets(['a0.txt.bak', 'a1.txt.bak']), 
+            targets(['a2.txt.bak', 'a3.txt.bak'])])
 
     def testSectionActions(self):
         '''Test actions of sections'''
