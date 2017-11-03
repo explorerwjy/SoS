@@ -209,8 +209,8 @@ def SoS_Action(run_mode=('run', 'interactive'), acceptable_args=('*',)):
                     else:
                         raise
             if 'output' in kwargs and kwargs['output'] is not None:
-                ofiles = [kwargs['output']] if isinstance(kwargs['output'], str) else kwargs['output']
-                ofiles = [os.path.expanduser(x) for x in ofiles]
+                ofiles = [file_target(kwargs['output'])] if isinstance(kwargs['output'], (str, file_target)) else kwargs['output']
+                ofiles = [x.fullname() for x in ofiles]
                 for ofile in ofiles:
                     if isinstance(ofile, str):
                         if not file_target(ofile).exists('any'):
@@ -935,13 +935,15 @@ def pandoc(script=None, input=None, output=None, args='{input:q} --output {outpu
         output_file = tempfile.NamedTemporaryFile(mode='w+t', suffix='.html', delete=False).name
     elif isinstance(output, str):
         output_file = os.path.expanduser(output)
+    elif isinstance(output, target):
+        output_file = os.path.expanduser(str(output))
     else:
         raise RuntimeError('A filename is expected, {} provided'.format(output))
     #
     ret = 1
     try:
         p = None
-        cmd = interpolate('pandoc {}'.format(args), {'input': input_file, 'output': output_file})
+        cmd = interpolate('pandoc {}'.format(args), {'input': targets(input_file), 'output': targets(output_file)})
         env.logger.trace('Running command "{}"'.format(cmd))
         if env.config['run_mode'] == 'interactive':
             # need to catch output and send to python output, which will in trun be hijacked by SoS notebook
@@ -955,7 +957,7 @@ def pandoc(script=None, input=None, output=None, args='{input:q} --output {outpu
     if ret != 0:
         temp_file = os.path.join('.sos', '{}_{}.md'.format('pandoc', os.getpid()))
         shutil.copyfile(input_file, temp_file)
-        cmd = interpolate('pandoc {}'.format(args), {'input': temp_file, 'output': output_file})
+        cmd = interpolate('pandoc {}'.format(args), {'input': targets(temp_file), 'output': targets(output_file)})
         raise RuntimeError('Failed to execute script. Please use command \n{}\nunder {} to test it.'
             .format(cmd, os.getcwd()))
     if write_to_stdout:
