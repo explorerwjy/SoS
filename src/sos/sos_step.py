@@ -474,6 +474,8 @@ class Base_Step_Executor:
             raise ValueError('Unacceptable value for parameter paired_with: {}'.format(paired_with))
         #
         for vn, vv in zip(var_name, var_value):
+            if isinstance(vv, targets):
+                vv = vv.targets()
             if isinstance(vv, str) or not isinstance(vv, Iterable):
                 raise ValueError('paired_with variable {} is not a sequence ("{}")'.format(vn, vv))
             if len(vv) != len(ifiles):
@@ -552,6 +554,8 @@ class Base_Step_Executor:
             for_each = [for_each]
         elif isinstance(for_each, Sequence):
             for_each = for_each
+        elif isinstance(for_each, targets):
+            for_each = for_each.targets()
         else:
             raise ValueError('Unacceptable value for parameter for_each: {}'.format(for_each))
         #
@@ -597,6 +601,8 @@ class Base_Step_Executor:
             # get loop size
             loop_size = None
             for name, values in zip(fe_iter_names, fe_values):
+                if isinstance(values, targets):
+                    values = values.targets()
                 if not isinstance(values, Sequence):
                     try:
                         import pandas as pd
@@ -620,14 +626,18 @@ class Base_Step_Executor:
             for vidx in range(loop_size):
                 for idx, _ in enumerate(_tmp_vars):
                     for var_name, values in zip(fe_iter_names, fe_values):
+                        if isinstance(values, targets):
+                            values = values.targets()
                         if isinstance(values, Sequence):
                             _tmp_vars[idx][var_name] = values[vidx]
-                        elif isinstance(values, (pd.DataFrame, pd.Series)):
-                            _tmp_vars[idx][var_name] = values.iloc[vidx]
-                        elif isinstance(values, pd.Index):
-                            _tmp_vars[idx][var_name] = values[vidx]
                         else:
-                            raise ValueError('Failed to iterate through for_each variable {}'.format(short_repr(values)))
+                            import pandas as pd
+                            if isinstance(values, (pd.DataFrame, pd.Series)):
+                                _tmp_vars[idx][var_name] = values.iloc[vidx]
+                            elif isinstance(values, pd.Index):
+                                _tmp_vars[idx][var_name] = values[vidx]
+                            else:
+                                raise ValueError('Failed to iterate through for_each variable {}'.format(short_repr(values)))
                 _vars.extend(copy.deepcopy(_tmp_vars))
 
     # directive input
@@ -716,11 +726,11 @@ class Base_Step_Executor:
             ofiles = _ogroups[env.sos_dict['_index']]
 
         # set variables
-        env.sos_dict.set('_output', ofiles)
+        env.sos_dict.set('_output', targets(ofiles))
         #
         if isinstance(env.sos_dict['output'], (type(None), Undetermined)):
-            env.sos_dict.set('output', copy.deepcopy(ofiles))
-        elif not isinstance(env.sos_dict['output'], Undetermined) and env.sos_dict['output'] != ofiles:
+            env.sos_dict.set('output', targets(copy.deepcopy(ofiles)))
+        elif not isinstance(env.sos_dict['output'], Undetermined) and env.sos_dict['output'] != targets(ofiles):
             env.sos_dict['output'].extend(ofiles)
 
     def process_task_args(self, **kwargs):
@@ -740,7 +750,7 @@ class Base_Step_Executor:
         args, _ = SoS_eval('__null_func__({})'.format(env.sos_dict['output'].expr), self.step.sigil)
         # handle dynamic args
         args = [x.resolve() if isinstance(x, dynamic) else x for x in args]
-        env.sos_dict.set('output', self.expand_output_files('', *args))
+        env.sos_dict.set('output', targets(self.expand_output_files('', *args)))
 
     def prepare_task(self):
         env.sos_dict['_runtime']['cur_dir'] = os.getcwd()
@@ -830,7 +840,7 @@ class Base_Step_Executor:
         if self.task_manager.has_task(task_id):
             raise RuntimeError('Identical task generated from _index={}.'.format(env.sos_dict['_index']))
         elif self.task_manager.has_output(task_vars['_output']):
-            raise RuntimeError('Task produces output files {} that are output of other tasks.'.format(', '.join(task_vars['_output'])))
+            raise RuntimeError('Task produces output files {} that are output of other tasks.'.format(task_vars['_output']))
         # if no trunk_size, the job will be submitted immediately
         # otherwise tasks will be accumulated and submitted in batch
         self.task_manager.append((task_id, taskdef, task_vars['_output']))
@@ -1008,7 +1018,7 @@ class Base_Step_Executor:
         if '__step_output__' not in env.sos_dict:
             env.sos_dict.set('input', None)
         else:
-            if env.sos_dict['__step_output__'] is not None and not isinstance(env.sos_dict['__step_output__'], (list, Undetermined)):
+            if env.sos_dict['__step_output__'] is not None and not isinstance(env.sos_dict['__step_output__'], (list, targets, Undetermined)):
                 raise RuntimeError('__step_output__ can only be None, Undetermined, or a list of files.')
             env.sos_dict.set('input', targets(copy.deepcopy(env.sos_dict['__step_output__'])))
 
@@ -1296,7 +1306,7 @@ class Base_Step_Executor:
                     # finalize output from output_groups because some output might be skipped
                     # this is the final version of the output but we do maintain output
                     # during the execution of step, for compatibility.
-                    env.sos_dict.set('output', self.output_groups[0])
+                    env.sos_dict.set('output', targets(self.output_groups[0]))
                     for og in self.output_groups[1:]:
                         if og != env.sos_dict['output']:
                             env.sos_dict['output'].extend(og)

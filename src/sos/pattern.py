@@ -87,6 +87,7 @@ def glob_wildcards(pattern, files=None):
                  for f in chain(filenames, dirnames))
 
     for f in files:
+        # f could be a file_target
         match = re.match(pattern, f)
         if match:
             for name, value in match.groupdict().items():

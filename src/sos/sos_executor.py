@@ -389,10 +389,10 @@ class Base_Executor:
                 raise RuntimeError('The value of section option skip can only be None, True or False, {} provided'.format(val_skip))
         return False
 
-    def match(self, target, step):
+    def match(self, obj, step):
         # for sos_step, we need to match step name
-        if isinstance(target, sos_step):
-            return step.match(target.name())
+        if isinstance(obj, sos_step):
+            return step.match(obj.name())
         if not 'provides' in step.options:
             return False
         patterns = step.options['provides']
@@ -403,17 +403,17 @@ class Base_Executor:
         #
         for p in patterns:
             # other targets has to match exactly
-            if isinstance(target, target) or isinstance(p, target):
-                if target == p:
+            if isinstance(obj, target) or isinstance(p, target):
+                if obj == p:
                     return {}
                 else:
                     continue
             # if this is a regular string
-            res = extract_pattern(p, [target])
+            res = extract_pattern(p, [str(obj)])
             if res and not any(None in x for x in res.values()):
                 return res
             # string match
-            elif file_target(p) == file_target(target):
+            elif file_target(p) == file_target(obj):
                 return True
         return False
 

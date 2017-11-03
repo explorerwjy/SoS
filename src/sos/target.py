@@ -114,12 +114,12 @@ class target:
 
     def exists(self, mode='any'):
         # mode should be 'any', 'target', or 'signature'
-        raise RuntimeError('Undefined base function')
+        raise RuntimeError('Undefined base function exists of target of type {}'.format(self.__class__.__name__))
 
     def name(self):
         # name of the target, which should be able to differentiate
         # this object with other targets of the same type.
-        raise RuntimeError('Undefined base function')
+        raise RuntimeError('Undefined base function name of type {}'.format(self.__class__.__name__))
 
     def signature(self, mode='any'):
         # signature of the content of the target, which should be
@@ -127,7 +127,7 @@ class target:
         #
         # if mode == 'target', the target has to exist and the signature
         # has to be calculated. Otherwise you can return cached signature
-        raise RuntimeError('Undefined base function')
+        raise RuntimeError('Undefined base function signature of type {}'.format(self.__class__.__name__))
 
     # -----------------------------------------------------
     # derived functions that do not need to be redefined
@@ -181,6 +181,9 @@ class targets(target):
                 raise RuntimeError('Unrecognized targets {} of type {}'.format(
                     arg, arg.__class__.__name__))
 
+    def targets(self):
+        return self._targets
+
     def __len__(self):
         return len(self._targets)
 
@@ -193,11 +196,31 @@ class targets(target):
         else:
             return ' '.join(x.__format__(format_spec) for x in self._targets)
 
-    def signature(self):
+    def signature(self, mode='any'):
         if len(self._targets) == 1:
+            env.logger.error(f'FIRST {self._targets[0]}')
             return self._targets[0].signature()
         else:
             raise ValueError('No signature for group of targets {}'.format(self))
+
+    def exists(self, mode='any'):
+        if len(self._targets) == 1:
+            return self._targets[0].exists(mode)
+        else:
+            raise ValueError('Canot test existense for group of targets {}'.format(self))
+
+    def name(self):
+        if len(self._targets) == 1:
+            return self._targets[0].name()
+        else:
+            raise ValueError('Canot get name() for group of targets {}'.format(self))
+
+
+    def sig_file(self):
+        if len(self._targets) == 1:
+            return self._targets[0].sig_file()
+        else:
+            raise ValueError('Canot get sig_file for group of targets {}'.format(self))
 
     def __repr__(self):
         return ', '.join(repr(x) for x in self._targets)
@@ -583,6 +606,13 @@ class RuntimeInfo:
         self.step_md5 = step_md5
         self.script = script
         # input can only be a list of files
+        if isinstance(input_files, targets):
+            input_files = input_files.targets()
+        if isinstance(output_files, targets):
+            output_files = output_files.targets()
+        if isinstance(dependent_files, targets):
+            dependent_files = dependent_files.targets()
+
         if not isinstance(input_files, list):
             if input_files is None:
                 self.input_files = []
