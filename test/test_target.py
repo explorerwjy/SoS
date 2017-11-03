@@ -73,6 +73,13 @@ class TestTarget(unittest.TestCase):
                 interpolate('{{target:{}}}'.format(fmt), globals(), locals()), res,
                     "Interpolation of {}:{} should be {}".format(target, fmt, res))
 
+    def testIterTargets(self):
+        '''Test iterator interface of targets'''
+        t = targets('1', '2', ['3', '4'])
+        self.assertEqual(len(t), 4)
+        for idx,i in enumerate(t):
+            self.assertEqual(str(i), str(idx + 1))
+
     def testShared(self):
         '''Test option shared'''
         script = SoS_Script(r"""

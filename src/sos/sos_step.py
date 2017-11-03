@@ -32,7 +32,7 @@ from itertools import tee, combinations
 from .utils import env, StopInputGroup, TerminateExecution, short_repr, stable_repr,\
     get_traceback, transcribe, expand_size, format_HHMMSS
 from .pattern import extract_pattern
-from .sos_eval import SoS_eval, SoS_exec, Undetermined
+from .sos_eval import SoS_eval, SoS_exec, Undetermined, accessed_vars
 from .target import target, file_target, dynamic, remote, targets, RuntimeInfo, UnknownTarget, RemovedTarget, UnavailableLock
 from .sos_syntax import SOS_INPUT_OPTIONS, SOS_DEPENDS_OPTIONS, SOS_OUTPUT_OPTIONS, \
     SOS_RUNTIME_OPTIONS, SOS_TAG
@@ -47,10 +47,11 @@ class PendingTasks(Exception):
 
 def analyze_section(section, default_input=None):
     '''Analyze a section for how it uses input and output, what variables
-    it uses, and input, output, etc.'''
+    it uses, and input, output, etc. If anything is dynamic, the relevant
+    properties will be Undetermined, causing the whole step to be executable
+    only after all previous steps.'''
     from .sos_executor import __null_func__
     from ._version import __version__
-    from .sos_eval import accessed_vars
 
     # these are the information we need to build a DAG, by default
     # input and output and undetermined, and there are no variables.
@@ -68,7 +69,6 @@ def analyze_section(section, default_input=None):
     #
     # 1. execute global definition to get a basic environment
     #
-    # FIXME: this could be made much more efficient
     if 'provides' in section.options:
         if '__default_output__' in env.sos_dict:
             step_output = env.sos_dict['__default_output__']
@@ -1109,7 +1109,7 @@ class Base_Step_Executor:
                 # other variables
                 #
                 env.sos_dict.update(v)
-                env.sos_dict.set('_input', g)
+                env.sos_dict.set('_input', targets(g))
                 self.log('_input')
                 env.sos_dict.set('_index', idx)
                 #

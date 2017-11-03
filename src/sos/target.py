@@ -154,10 +154,8 @@ class target:
     def __hash__(self):
         return hash(repr(self))
 
-    def __eq__(self, obj):
-        return isinstance(obj, self.__class__) and self.signature() == obj.signature()
 
-class targets(target):
+class targets(target, Sequence):
     '''A collection of targets'''
     def __init__(self, *args):
         super(target, self).__init__()
@@ -166,7 +164,9 @@ class targets(target):
             if isinstance(arg, str):
                 self._targets.append(file_target(os.path.expanduser(arg)))
             elif isinstance(arg, target):
-                self._targets.append(target)
+                self._targets.append(arg)
+            elif isinstance(arg, targets):
+                self._targets.extends(arg.targets())
             elif isinstance(arg, Iterable):
                 # in case arg is a Generator, check its type will exhaust it
                 for t in list(arg):
@@ -174,6 +174,8 @@ class targets(target):
                         self._targets.append(file_target(t))
                     elif isinstance(t, target):
                         self._targets.append(t)
+                    elif isinstance(t, targets):
+                        self._targets.extends(t.targets())
                     elif t is not None:
                         raise RuntimeError('Unrecognized targets {} of type {}'.format(
                             t, t.__class__.__name__))
@@ -184,6 +186,9 @@ class targets(target):
     def targets(self):
         return self._targets
 
+    def extend(self, another):
+        self._targets.extend(targets(another).targets())
+
     def __len__(self):
         return len(self._targets)
 
@@ -192,13 +197,13 @@ class targets(target):
 
     def __format__(self, format_spec):
         if ',' in format_spec:
-            return ','.join(x.__format__(format_spec) for x in self._targets)
+            fmt_spec = format_spec.replace(',', '')
+            return ','.join(x.__format__(fmt_spec) for x in self._targets)
         else:
             return ' '.join(x.__format__(format_spec) for x in self._targets)
 
     def signature(self, mode='any'):
         if len(self._targets) == 1:
-            env.logger.error(f'FIRST {self._targets[0]}')
             return self._targets[0].signature()
         else:
             raise ValueError('No signature for group of targets {}'.format(self))
