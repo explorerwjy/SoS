@@ -425,7 +425,9 @@ class Base_Executor:
         resolved = 0
         while True:
             added_node = 0
+
             dangling_targets, existing_targets = dag.dangling(dag_targets)
+
             if dangling_targets:
                 env.logger.info('Resolving {} objects from {} nodes'.format(len(dangling_targets), dag.number_of_nodes()))
             # find matching steps
@@ -499,7 +501,7 @@ class Base_Executor:
                 # NOTE: If a step is called multiple times with different targets, it is much better
                 # to use different names because pydotplus can be very slow in handling graphs with nodes
                 # with identical names.
-                dag.add_step(section.uuid, f'{section.step_name()} {short_repr(env.sos_dict["__default_output__"])}', None, res['step_input'].to_names(),
+                dag.add_step(section.uuid, f'{section.step_name()} {short_repr(env.sos_dict["__default_output__"].to_names())}', None, res['step_input'].to_names(),
                              res['step_depends'].to_names(), res['step_output'].to_names(), context=context)
                 added_node += 1
                 resolved += 1

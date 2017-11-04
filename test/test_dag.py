@@ -347,7 +347,7 @@ C_3 -> C_4;
     def testAuxiliarySteps(self):
         script = SoS_Script('''
 [K: provides='{name}.txt']
-output: f"{name}.txt"
+output: f"{name[0]}.txt"
 
 run:
     touch '{name}.txt'
@@ -573,7 +573,7 @@ run:
         wf = script.workflow()
         #
         # test 1, we only need to generate target 'B1.txt'
-        dag = Base_Executor(wf).initialize_dag(targets=['B1.txt'])
+        dag = Base_Executor(wf).initialize_dag(dag_targets=['B1.txt'])
         # note that A2 is no longer mentioned
         self.assertDAG(dag,
 '''
@@ -603,7 +603,7 @@ strict digraph "" {
             t.remove('both')
         #
         # test 2, we would like to generate two files
-        dag = Base_Executor(wf).initialize_dag(targets=['B2.txt', 'C2.txt'])
+        dag = Base_Executor(wf).initialize_dag(dag_targets=['B2.txt', 'C2.txt'])
         # note that A2 is no longer mentioned
         self.assertDAG(dag,
 '''
@@ -632,7 +632,7 @@ strict digraph "" {
         #
         # test 3, generate two separate trees
         #
-        dag = Base_Executor(wf).initialize_dag(targets=['B3.txt', 'C2.txt'])
+        dag = Base_Executor(wf).initialize_dag(dag_targets=['B3.txt', 'C2.txt'])
         # note that A2 is no longer mentioned
         self.assertDAG(dag,
 '''

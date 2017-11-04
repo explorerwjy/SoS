@@ -306,6 +306,12 @@ class sos_step(target):
     def write_sig(self):
         pass
 
+    def __eq__(self, other):
+        return isinstance(other, sos_step) and self._step_name == other._step_name
+
+    def __hash__(self):
+        return hash(self._step_name)
+
 # class bundle(target):
 #     '''a bundle of other targets'''
 #     def __init__(self, *args):
