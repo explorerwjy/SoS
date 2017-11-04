@@ -594,7 +594,7 @@ strict digraph "" {
 "C3 ['C3.txt']" -> "C1 ['C1.txt']";
 }
 ''')
-        Base_Executor(wf).run(targets=['B1.txt'])
+        Base_Executor(wf).run(dag_targets=['B1.txt'])
         for f in ['A1.txt', 'A2.txt']:
             self.assertFalse(file_target(f).exists())
         for f in ['C2.txt', 'B2.txt', 'B1.txt', 'B3.txt', 'C1.txt', 'C3.txt', 'C4.txt']:
@@ -622,7 +622,7 @@ strict digraph "" {
 "C1 ['C1.txt']" -> "B2 ['B2.txt']";
 }
 ''')
-        Base_Executor(wf).run(targets=['B2.txt', 'C2.txt'])
+        Base_Executor(wf).run(dag_targets=['B2.txt', 'C2.txt'])
         for f in ['A1.txt', 'B1.txt', 'A2.txt']:
             self.assertFalse(file_target(f).exists())
         for f in ['C2.txt', 'B2.txt', 'B3.txt', 'C1.txt', 'C3.txt', 'C4.txt']:
@@ -643,7 +643,7 @@ strict digraph "" {
 "C4 ['C4.txt']" -> "C2 ['C2.txt']";
 }
 ''')
-        Base_Executor(wf).run(targets=['B3.txt', 'C2.txt'])
+        Base_Executor(wf).run(dag_targets=['B3.txt', 'C2.txt'])
         for f in ['A1.txt', 'B1.txt', 'A2.txt', 'B2.txt', 'C1.txt', 'C3.txt']:
             self.assertFalse(file_target(f).exists())
         for f in ['C2.txt', 'B3.txt', 'C4.txt']:
@@ -687,6 +687,7 @@ run:
     touch {output}
 ''')
         # the workflow should call step K for step C_2, but not C_3
+        env.verbosity = 3
         wf = script.workflow()
         dag = Base_Executor(wf).initialize_dag()
         self.assertDAG(dag,
@@ -922,7 +923,7 @@ run:
         file_target('a.bam.bai').remove('both')
         file_target('a.vcf').remove('both')
         self.touch('a.bam')
-        Base_Executor(script.workflow()).run(targets=['a.vcf'])
+        Base_Executor(script.workflow()).run(dag_targets=['a.vcf'])
         for file in ('a.vcf', 'a.bam', 'a.bam.bai'):
             file_target(file).remove('both')
 
@@ -989,7 +990,7 @@ run:
         wf = script.workflow()
         #
         # test 1, we only need to generate target 'B1.txt'
-        Base_Executor(wf, config={'output_dag':'test'}).initialize_dag(targets=['B1.txt'])
+        Base_Executor(wf, config={'output_dag':'test'}).initialize_dag(dag_targets=['B1.txt'])
         # note that A2 is no longer mentioned
         self.assertDAG('test.dot',
 '''
@@ -1011,7 +1012,7 @@ strict digraph "" {
 }
 ''')
         # test 2, we would like to generate two files
-        Base_Executor(wf, config={'output_dag':'test'}).initialize_dag(targets=['B2.txt', 'C2.txt'])
+        Base_Executor(wf, config={'output_dag':'test'}).initialize_dag(dag_targets=['B2.txt', 'C2.txt'])
         # note that A2 is no longer mentioned
         self.assertDAG('test.dot',
 '''
@@ -1032,7 +1033,7 @@ strict digraph "" {
 ''')
         # test 3, generate two separate trees
         #
-        Base_Executor(wf, config={'output_dag':'test'}).initialize_dag(targets=['B3.txt', 'C2.txt'])
+        Base_Executor(wf, config={'output_dag':'test'}).initialize_dag(dag_targets=['B3.txt', 'C2.txt'])
         # note that A2 is no longer mentioned
         self.assertDAG('test.dot',
 '''

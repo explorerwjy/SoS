@@ -665,7 +665,7 @@ class Base_Executor:
                 sigfile.write('# end time: {}\n'.format(time.strftime('%a, %d %b %Y %H:%M:%S +0000', time.gmtime())))
                 sigfile.write('# input and dependent files\n')
 
-    def run(self, targets=None, parent_pipe=None, my_workflow_id=None, mode='run'):
+    def run(self, dag_targets=None, parent_pipe=None, my_workflow_id=None, mode='run'):
         '''Execute a workflow with specified command line args. If sub is True, this
         workflow is a nested workflow and be treated slightly differently.
         '''
@@ -696,12 +696,12 @@ class Base_Executor:
         # python statements in different run modes.
         env.sos_dict.set('run_mode', env.config['run_mode'])
         # process step of the pipelinp
-        dag = self.initialize_dag(dag_targets=targets)
+        dag = self.initialize_dag(dag_targets=dag_targets)
 
         # if targets are specified and there are only signatures for them, we need
         # to remove the signature and really generate them
-        if targets:
-            for t in targets:
+        if dag_targets:
+            for t in dag_targets:
                 if not file_target(t).exists('target') and file_target(t).exists('signature'):
                     env.logger.info('Re-generating {}'.format(t))
                     file_target(t).remove('signature')
@@ -783,7 +783,7 @@ class Base_Executor:
                             # receive the real definition
                             env.logger.debug('{} receives workflow request {}'.format(i_am(), workflow_id))
                             # (wf, args, shared, config)
-                            wf, targets, args, shared, config = q.recv()
+                            wf, dag_targets, args, shared, config = q.recv()
                             # a workflow needs to be executed immediately because otherwise if all workflows
                             # occupies all workers, no real step could be executed.
 
@@ -805,7 +805,7 @@ class Base_Executor:
                             wfrunnable._status = 'workflow_running_pending'
                             wfrunnable._pending_workflow = workflow_id
                             #
-                            q1.send(('workflow', workflow_id, wf, targets, args, shared, config))
+                            q1.send(('workflow', workflow_id, wf, dag_targets, args, shared, config))
                             procs.append([worker, q1, wfrunnable])
                             #
                             continue

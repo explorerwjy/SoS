@@ -162,7 +162,7 @@ class targets(target, Sequence):
         self._targets = []
         for arg in args:
             if isinstance(arg, str):
-                self._targets.append(file_target(os.path.expanduser(arg)))
+                self._targets.append(arg)
             elif isinstance(arg, targets):
                 self._targets.extend(arg.targets())
             elif isinstance(arg, target):
@@ -171,7 +171,7 @@ class targets(target, Sequence):
                 # in case arg is a Generator, check its type will exhaust it
                 for t in list(arg):
                     if isinstance(t, str):
-                        self._targets.append(file_target(t))
+                        self._targets.append(t)
                     elif isinstance(t, targets):
                         self._targets.extend(t.targets())
                     elif isinstance(t, target):
